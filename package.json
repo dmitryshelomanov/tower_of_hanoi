@@ -11,6 +11,7 @@
     "react-scripts": "3.2.0",
     "styled-components": "^4.4.0"
   },
+  "author": "Shelomanov Dmitry <userbq201@mail.ru>",
   "homepage": "https://userbq201.github.io/tower_of_hanoi",
   "scripts": {
     "start": "react-scripts start",
