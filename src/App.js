@@ -9,7 +9,7 @@ import React, {
 import styled from "styled-components";
 import { Tower, TowersWrapper } from "./components";
 import { buildDiskSizesForLvls } from "./disk-sizes";
-import { alghorithmRunner, FIRST_TOWER } from "./alghorithm";
+import { alghorithmRunner, FIRST_TOWER, THIRD_TOWER } from "./alghorithm";
 
 const Select = styled.select`
   margin-left: 15px;
@@ -151,12 +151,35 @@ function useSolver(towers, moveDisk) {
     isPause,
     pause,
     play,
+    clearIntervalId,
     solve: () => {
       const rs = alghorithmRunner(towers);
 
       setSteps(rs);
     }
   };
+}
+
+function useCompleteState(disksCount, towers, cb) {
+  const isComplete = disksCount === towers[THIRD_TOWER].length;
+
+  useEffect(() => {
+    if (isComplete) {
+      cb();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete]);
+}
+
+function useInitialState(disksCount, towers, cb) {
+  const isInitial = disksCount === towers[FIRST_TOWER].length;
+
+  useEffect(() => {
+    if (isInitial) {
+      cb();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitial]);
 }
 
 const DISKS_VARRIANTS = [3, 4, 5, 6, 7, 8];
@@ -176,7 +199,16 @@ export function App() {
     dispatch({ type: "RESTART" });
   }, []);
 
-  const { solve } = useSolver(gameState.towers, onMoveDisk);
+  const onCompleteCallback = useCallback(() => {
+    setTimeout(() => {
+      alert(`Completed in ${gameState.userMoves} moves`);
+    }, 100);
+  }, [gameState.userMoves]);
+
+  const { solve, clearIntervalId } = useSolver(gameState.towers, onMoveDisk);
+
+  useCompleteState(disksCount, gameState.towers, onCompleteCallback);
+  useInitialState(disksCount, gameState.towers, clearIntervalId);
 
   useEffect(() => {
     dispatch({
