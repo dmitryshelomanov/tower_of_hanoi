@@ -3,13 +3,13 @@ import React, {
   useMemo,
   useReducer,
   useEffect,
-  useCallback,
-  useRef
+  useCallback
 } from "react";
 import styled from "styled-components";
 import { Tower, TowersWrapper } from "./components";
 import { buildDiskSizesForLvls } from "./disk-sizes";
-import { alghorithmRunner, FIRST_TOWER, THIRD_TOWER } from "./alghorithm";
+import { FIRST_TOWER, THIRD_TOWER } from "./alghorithm";
+import { useSolver } from "./useSolver";
 
 const Select = styled.select`
   margin-left: 15px;
@@ -108,58 +108,6 @@ function disksReducer(state, action) {
   }
 }
 
-function useSolver(towers, moveDisk) {
-  const [steps, setSteps] = useState([]);
-  const [isPause, setPause] = useState(true);
-  const intervalId = useRef();
-  const step = useRef(0);
-
-  const clearIntervalId = useCallback(() => {
-    if (intervalId.current) {
-      clearInterval(intervalId.current);
-
-      intervalId.current = undefined;
-    }
-  }, []);
-
-  const pause = useCallback(() => {
-    setPause(true);
-    clearIntervalId();
-  }, [clearIntervalId]);
-
-  const play = useCallback(() => {
-    setPause(false);
-    intervalId.current = setInterval(() => {
-      if (step.current < steps.length) {
-        moveDisk(steps[step.current]);
-        step.current += 1;
-
-        return;
-      }
-
-      clearIntervalId();
-    }, 1000);
-  }, [clearIntervalId, moveDisk, steps]);
-
-  useEffect(() => {
-    if (steps.length > 0) {
-      play();
-    }
-  }, [play, steps.length]);
-
-  return {
-    isPause,
-    pause,
-    play,
-    clearIntervalId,
-    solve: () => {
-      const rs = alghorithmRunner(towers);
-
-      setSteps(rs);
-    }
-  };
-}
-
 function useCompleteState(disksCount, towers, cb) {
   const isComplete = disksCount === towers[THIRD_TOWER].length;
 
@@ -169,17 +117,21 @@ function useCompleteState(disksCount, towers, cb) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isComplete]);
+
+  return isComplete;
 }
 
 function useInitialState(disksCount, towers, cb) {
   const isInitial = disksCount === towers[FIRST_TOWER].length;
-
+  console.log({ disksCount, len: towers[FIRST_TOWER].length });
   useEffect(() => {
     if (isInitial) {
       cb();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInitial]);
+
+  return isInitial;
 }
 
 const DISKS_VARRIANTS = [3, 4, 5, 6, 7, 8];
@@ -195,9 +147,20 @@ export function App() {
     dispatch({ type: "MOVE_DISK", payload: { fromTower, toTower, diskId } });
   }, []);
 
+  const {
+    inProgress,
+    isPause,
+    solve,
+    clearIntervalId,
+    pause,
+    play,
+    restart
+  } = useSolver(gameState.towers, onMoveDisk);
+
   const onRestart = useCallback(() => {
+    restart();
     dispatch({ type: "RESTART" });
-  }, []);
+  }, [restart]);
 
   const onCompleteCallback = useCallback(() => {
     setTimeout(() => {
@@ -205,10 +168,13 @@ export function App() {
     }, 100);
   }, [gameState.userMoves]);
 
-  const { solve, clearIntervalId } = useSolver(gameState.towers, onMoveDisk);
+  const isInitial = useInitialState(
+    disksCount,
+    gameState.towers,
+    clearIntervalId
+  );
 
   useCompleteState(disksCount, gameState.towers, onCompleteCallback);
-  useInitialState(disksCount, gameState.towers, clearIntervalId);
 
   useEffect(() => {
     dispatch({
@@ -236,7 +202,8 @@ export function App() {
         Number of disks
         <Select
           onChange={event => {
-            setDisksCount(event.target.value);
+            restart();
+            setDisksCount(Number.parseInt(event.target.value));
           }}
           value={disksCount}
         >
@@ -248,7 +215,13 @@ export function App() {
         </Select>
       </p>
       <ButtonsWrapper>
-        <button onClick={solve}>solve it!</button>
+        {!inProgress && (
+          <button disabled={!isInitial} onClick={solve}>
+            solve it!
+          </button>
+        )}
+        {inProgress && !isPause && <button onClick={pause}>pause</button>}
+        {inProgress && isPause && <button onClick={play}>play</button>}
         <button onClick={onRestart}>restart</button>
       </ButtonsWrapper>
     </Wrapper>
