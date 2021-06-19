@@ -1,6 +1,6 @@
 # Towers of Hanoi
 
-[Try it](https://userbq201.github.io/tower_of_hanoi/)
+[Try it](https://dmitryshelomanov.github.io/tower_of_hanoi/)
 
 ![preview](preview.png)
 
